@@ -1,0 +1,39 @@
+pydantic>=2.0.0
+pydantic-settings
+minio
+pydicom
+numpy
+torch
+monai
+tenacity       # For retry logic
+structlog      # For structured JSON logging
+pytest         # For testing
+python-json-logger
+nibabel         
+python-dotenv
+opencv-python-headless
+scikit-image
+monai[nibabel, tqdm]
+cvat-sdk>=2.4.0
+kornia>=0.7.0    # GPU Computer Vision
+tqdm             # Progress Bars
+imagehash        # For perceptual deduplication
+scipy            # For entropy calculation
+mlflow>=2.0.0
+optuna>=3.0.0
+einops 
+pandas
+scikit-learn
+onnx>=1.14.0
+onnxruntime>=1.15.0     # For local verification
+fastapi>=0.100.0
+uvicorn[standard]
+tritonclient[grpc]      # High-performance gRPC client
+python-multipart        # For file uploads
+websockets
+python-jose[cryptography]  # JWT Token handling
+hvac                       # HashiCorp Vault Client
+prometheus-fastapi-instrumentator # Metrics for API
+streamlit                  # For Clinician Dashboard
+requests                   # For calling APIs
+cachetools       # NEW: For caching Vault secrets/JWKS keys

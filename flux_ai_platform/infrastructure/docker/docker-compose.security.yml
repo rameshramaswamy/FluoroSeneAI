@@ -1,0 +1,53 @@
+version: "3.8"
+
+services:
+  # 1. Identity Provider (Keycloak)
+  keycloak:
+    image: quay.io/keycloak/keycloak:22.0.1
+    container_name: flux_iam
+    command: start-dev
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8080:8080"
+    networks:
+      - flux_net
+
+  # 2. Secrets Management (Vault)
+  vault:
+    image: hashicorp/vault:1.13
+    container_name: flux_vault
+    ports:
+      - "8200:8200"
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: root
+    cap_add:
+      - IPC_LOCK
+    networks:
+      - flux_net
+
+  # 3. Metrics (Prometheus)
+  prometheus:
+    image: prom/prometheus
+    container_name: flux_metrics
+    ports:
+      - "9090:9090"
+    # volumes: ... (mount config)
+    networks:
+      - flux_net
+
+  # 4. Visualization (Grafana)
+  grafana:
+    image: grafana/grafana
+    container_name: flux_viz
+    ports:
+      - "3000:3000"
+    networks:
+      - flux_net
+    depends_on:
+      - prometheus
+
+networks:
+  flux_net:
+    driver: bridge

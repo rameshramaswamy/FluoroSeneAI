@@ -1,0 +1,11 @@
+{
+  "displayName": "Flux Data Lake",
+  "providerType": "AWS_S3_BUCKET",
+  "resource": "flux-raw-dicom",
+  "credentialsType": "KEY_PAIR",
+  "keyId": "fluxadmin",
+  "secretKey": "fluxpassword123",
+  "endpointUrl": "http://minio:9000",
+  "usePathStyleUrl": true,
+  "manifests": ["manifest.jsonl"]
+}

@@ -1,0 +1,104 @@
+version: "3.8"
+services:
+  minio:
+    image: minio/minio:latest
+    container_name: flux_minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-fluxadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-fluxpassword123}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - flux_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  postgres:
+    image: postgres:14-alpine
+    container_name: flux_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-fluxuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fluxpassword123}
+      POSTGRES_DB: flux_metadata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - flux_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fluxuser"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  orthanc:
+    image: jodogne/orthanc
+    container_name: flux_orthanc
+    ports:
+      - "4242:4242"
+      - "8042:8042"
+    environment:
+      ORTHANC_NAME: "FLUX_PACS"
+    networks:
+      - flux_net
+
+  # 1. The Inference Engine (NVIDIA Triton)
+  triton:
+    image: nvcr.io/nvidia/tritonserver:23.10-py3
+    container_name: flux_triton
+    # Mount the model repository we generated
+    volumes:
+      - ../../model_repository:/models
+    # Start server in explicit mode
+    command: ["tritonserver", "--model-repository=/models", "--log-verbose=0"]
+    ports:
+      - "8000:8000" # HTTP
+      - "8001:8001" # gRPC
+      - "8002:8002" # Metrics
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - flux_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/v2/health/ready"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  # 2. The API Gateway (FastAPI)
+  gateway:
+    build:
+      context: ../../
+      dockerfile: Dockerfile.api
+    container_name: flux_gateway
+    ports:
+      - "8080:8000"
+    environment:
+      - TRITON_URL=triton:8001
+      - LOG_LEVEL=INFO
+    depends_on:
+      triton:
+        condition: service_healthy
+    networks:
+      - flux_net
+
+networks:
+  flux_net:
+    driver: bridge
+
+volumes:
+  minio_data:
+  postgres_data:
